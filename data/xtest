@@ -1,0 +1,3 @@
+../bin/mRNAmarkup -i ATput -R 1e-20 -A 1e-20 -h skip -D 1e-10 -o test-outdir >& test-err
+egrep "STEP" test-err > test-flow
+egrep "REPORT" test-err > test-report

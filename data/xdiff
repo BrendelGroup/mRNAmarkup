@@ -1,0 +1,3 @@
+echo "test-report"  > differences; echo "" >> differences; diff test-report test-report.orig >> differences
+echo "test-err"    >> differences; echo "" >> differences; diff test-err    test-err.orig    >> differences
+more differences
