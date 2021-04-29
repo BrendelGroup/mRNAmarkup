@@ -1,0 +1,1582 @@
+#!/bin/bash
+#
+# mRNAmarkup:  a bash script representing a work flow for mRNA inspection and
+#              annotation using BLAST+, MuSeqBox, and other programs.
+#
+# Last update: April 29, 2019.  Volker Brendel.
+#
+
+# Set the install directory (set this variable to the location of the
+# mRNAmarkup.conf file):
+
+installdir=INSTALLDIR
+
+
+# Default option settings:
+
+configfile=$installdir/mRNAmarkup.conf
+
+cflagset=0
+iflagset=0
+rflagset=0
+revalueset=1
+aflagset=0
+aevalueset=1
+hflagset=0
+hevalueset=1
+dflagset=0
+devalueset=1
+oflagset=0
+outputdir=.
+step=0
+substep=0
+subsubstep=0
+
+
+##### Functions  1 #####
+function readconfigfile {
+
+# Read the default mRNAmarkup.conf configuration file:
+# $1 = config file
+
+  # Locations and names of protein databases:
+VectorDBdir=`grep '^VectorDBdir=' "$1" | awk -F"=" '{print $2}'`
+VectorDB=`grep '^VectorDB=' "$1" | awk -F"=" '{print $2}'`
+BacteriaDBdir=`grep '^BacteriaDBdir=' "$1" | awk -F"=" '{print $2}'`
+BacteriaDB=`grep '^BacteriaDB=' "$1" | awk -F"=" '{print $2}'`
+ReferenceDBdir=`grep '^ReferenceDBdir=' "$1" | awk -F"=" '{print $2}'`
+if [[ $rflagset == 0 ]]; then
+  ReferenceDB=`grep '^ReferenceDB=' "$1" | awk -F"=" '{print $2}'`
+fi
+AllProteinDBdir=`grep '^AllProteinDBdir=' "$1" | awk -F"=" '{print $2}'`
+if [[ $aflagset == 0 ]]; then
+  AllProteinDB=`grep '^AllProteinDB=' "$1" | awk -F"=" '{print $2}'`
+fi
+HypotheticalProteinDBdir=`grep '^HypotheticalProteinDBdir=' "$1" | awk -F"=" '{print $2}'`
+if [[ $hflagset == 0 ]]; then
+  HypotheticalProteinDB=`grep '^HypotheticalProteinDB=' "$1" | awk -F"=" '{print $2}'`
+fi
+ProteinDomainDBdir=`grep '^ProteinDomainDBdir=' "$1" | awk -F"=" '{print $2}'`
+if [[ $dflagset == 0 ]]; then
+  ProteinDomainDB=`grep '^ProteinDomainDB=' "$1" | awk -F"=" '{print $2}'`
+fi
+miRBasedir=`grep '^miRBasedir=' "$1" | awk -F"=" '{print $2}'`
+miRBase=`grep '^miRBase=' "$1" | awk -F"=" '{print $2}'`
+
+  # BLAST+ parameters:
+numThreads=`grep '^numThreads=' "$1" | awk -F"=" '{print $2}'`
+tmpdir=`grep '^tmpdir=' "$1" | awk -F"=" '{print $2}'`
+revalue=`grep '^revalue=' "$1" | awk -F"=" '{print $2}'`
+RnumDescriptions=`grep '^RnumDescriptions=' "$1" | awk -F"=" '{print $2}'`
+RnumAlignments=`grep '^RnumAlignments=' "$1" | awk -F"=" '{print $2}'`
+aevalue=`grep '^aevalue=' "$1" | awk -F"=" '{print $2}'`
+AnumDescriptions=`grep '^AnumDescriptions=' "$1" | awk -F"=" '{print $2}'`
+AnumAlignments=`grep '^AnumAlignments=' "$1" | awk -F"=" '{print $2}'`
+hevalue=`grep '^hevalue=' "$1" | awk -F"=" '{print $2}'`
+HnumDescriptions=`grep '^HnumDescriptions=' "$1" | awk -F"=" '{print $2}'`
+HnumAlignments=`grep '^HnumAlignments=' "$1" | awk -F"=" '{print $2}'`
+devalue=`grep '^devalue=' "$1" | awk -F"=" '{print $2}'`
+DnumDescriptions=`grep '^DnumDescriptions=' "$1" | awk -F"=" '{print $2}'`
+DnumAlignments=`grep '^DnumAlignments=' "$1" | awk -F"=" '{print $2}'`
+
+  # MuSeqBox column width parameters:
+idsize=`grep '^idsize=' "$1" | awk -F"=" '{print $2}'`
+dbsize=`grep '^dbsize=' "$1" | awk -F"=" '{print $2}'`
+ansize=`grep '^ansize=' "$1" | awk -F"=" '{print $2}'`
+srsize=`grep '^srsize=' "$1" | awk -F"=" '{print $2}'`
+
+  # MuSeqBox parameters for establishing potential full-length coding
+  # sequences:
+Rnhits=`grep '^Rnhits=' "$1" | awk -F"=" '{print $2}'`
+Rnhsps=`grep '^Rnhsps=' "$1" | awk -F"=" '{print $2}'`
+Rv5s=`grep '^Rv5s=' "$1" | awk -F"=" '{print $2}'`
+Rv3s=`grep '^Rv3s=' "$1" | awk -F"=" '{print $2}'`
+Rv5q=`grep '^Rv5q=' "$1" | awk -F"=" '{print $2}'`
+Rv3q=`grep '^Rv3q=' "$1" | awk -F"=" '{print $2}'`
+Rscv=`grep '^Rscv=' "$1" | awk -F"=" '{print $2}'`
+Rqcv=`grep '^Rqcv=' "$1" | awk -F"=" '{print $2}'`
+
+  # MuSeqBox parameters for annotation :
+pid=`grep '^pid=' "$1" | awk -F"=" '{print $2}'`
+mao=`grep '^mao=' "$1" | awk -F"=" '{print $2}'`
+scv=`grep '^scv=' "$1" | awk -F"=" '{print $2}'`
+
+  # ESTScan parameters:
+trainESTScan=`grep '^trainESTScan=' "$1" | awk -F"=" '{print $2}'`
+
+}
+
+
+##### Configure the mRNAmarkup script, defaults: #####
+readconfigfile $configfile
+
+
+##### Process command line arguments: #####
+
+while getopts ":c:i:r:R:a:A:h:H:d:D:o:" optname
+  do
+    case "$optname" in
+      "c")
+        cflagset=1
+        configfile=$OPTARG
+        ;;
+      "i")
+        iflagset=1
+        mRNAfile=$OPTARG
+        ;;
+      "r")
+        rflagset=1
+        ReferenceDB=$OPTARG
+        ;;
+      "R")
+        revalue=$OPTARG
+        if [ $revalue == 0 ]; then revalueset=0; fi
+        ;;
+      "a")
+        aflagset=1
+        AllProteinDB=$OPTARG
+        ;;
+      "A")
+        aevalue=$OPTARG
+        if [ $aevalue == x ]; then
+          aevalueset=0
+        else
+          if [ $aevalue == 0 ]; then
+            if [[ $revalue > 0 ]]; then
+              echo ""
+              echo "Potential parameter inconsistency for -A 0:"
+              echo "Upstream data may change.  Either"
+              echo ""
+              echo "  set -R 0	to use the existing blastx versus $ReferenceDB output file,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -a aevalue > 0	to re-run blastx matching against $AllProteinDB,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -A x	to force use of the existing blastx versus $AllProteinDB output file"
+              echo "          	(if you are sure of data consistency)"
+              echo ""
+              exit
+            else
+              aevalueset=0
+            fi
+          fi
+        fi
+        ;;
+      "h")
+        hflagset=1
+        HypotheticalProteinDB=$OPTARG
+        ;;
+      "H")
+        hevalue=$OPTARG
+        if [ $hevalue == x ]; then
+          hevalueset=0
+        else
+          if [ $hevalue == 0 ]; then
+            if [[ $hevalue > 0 ]]; then
+              echo ""
+              echo "Potential parameter inconsistency for -H 0:"
+              echo "Upstream data may change.  Either"
+              echo ""
+              echo "  set -A 0	to use the existing blastx versus $AllProteinDB output file,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -h hevalue > 0	to re-run blastx matching against $HypotheticalProteinDB,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -H x	to force use of the existing blastx versus $HypotheticalProteinDB output file"
+              echo "          	(if you are sure of data consistency)"
+              echo ""
+              exit
+            else
+              hevalueset=0
+            fi
+          fi
+        fi
+        ;;
+      "d")
+        dflagset=1
+        ProteinDomainDB=$OPTARG
+        ;;
+      "D")
+        devalue=$OPTARG
+        if [ $devalue == x ]; then
+          devalueset=0
+        else
+          if [ $devalue == 0 ]; then
+            if [[ $aevalue > 0 ]]; then
+              echo ""
+              echo "Potential parameter inconsistency for -D 0:"
+              echo "Upstream data may change.  Either"
+              echo  ""
+              echo  "  set -A 0	to use the existing blastx versus $AllProteinDB output file,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -d devalue > 0	to re-run matching against $ProteinDomainDB,"
+              echo ""
+              echo "or"
+              echo ""
+              echo "  set -D x	to force use of the existing rpsblastn versus $ProteinDomainDB output file"
+              echo "          	(if you are sure of data consistency)"
+              echo ""
+              exit
+            else
+              devalueset=0
+            fi
+          fi
+        fi
+        ;;
+      "o")
+        oflagset=1
+        outputdir=$OPTARG
+        ;;
+      "?")
+        echo "Unknown option $OPTARG."
+        ;;
+      ":")
+        echo "No argument value provided for option $OPTARG."
+        ;;
+      *)
+      # Bad luck!?:
+        echo "An unknown error occurred while processing options."
+        ;;
+    esac
+  done
+
+
+if [ $iflagset == 0 ]
+  then
+    echo "USAGE: mRNAmarkup [-c configfile] -i mRNAfile [-r ReferenceDB] [-R revalue] [-a AllProteinDB] [-A aevalue]"
+    echo "              [-h HypotheticalProteinDB] [-H hevalue] [-d ProteinDomainDB] [-D devalue]"
+    echo "              [-o outputdir]"
+    echo ""
+    echo "Defaults:         configfile = $installdir/mRNAmarkup.conf"
+    echo "                  ReferenceDB = $ReferenceDB"
+    echo "                  revalue = $revalue"
+    echo "                    (set to 0 if the blastx versus ReferenceDB result is already present)"
+    echo "                  AllProteinDB = $AllProteinDB"
+    echo "                  aevalue = $aevalue"
+    echo "                    (set to 0 if the blastx versus AllProteinDB result is already present"
+    echo "                     and revalue != 0; -A x forces use of the current blastx versus"
+    echo "                     AllProteinDB result independent of the -R argument)"
+    echo "                  HypotheticalProteinDB = $HypotheticalProteinDB"
+    echo "                  hevalue = $hevalue"
+    echo "                    (set to 0 if the blastx versus HypotheticalProteinDB result is already present"
+    echo "                     and aevalue != 0; -H x forces use of the current blastx versus"
+    echo "                     HypotheticalProteinDB result independent of the -A argument)"
+    echo "                  ProteinDomainDB = $ProteinDomainDB"
+    echo "                  devalue = $devalue"
+    echo "                    (set to 0 if the rpstblastn versus ProteinDomainDB result is already present)"
+    echo "                     and aevalue != 0; -D x forces use of the current rpstblastn versus"
+    echo "                     ProteinDomainDB result independent of the -A argument)"
+    echo "                  outputdir = ."
+    exit
+fi
+
+# Read user-supplied configuration file:
+if [ $cflagset == 1 ]
+  then
+    if [ ! -e $configfile ]
+      then
+        echo ""
+        echo "Configuration file $configfile does not exist.  Exiting."
+        echo ""
+        exit
+   fi
+fi
+if [ $rflagset == 1 ]
+  then
+    if [ ! -e $ReferenceDBdir/$ReferenceDB ]
+      then
+        echo ""
+        echo "Reference protein database file $ReferenceDB does not exist in directory $ReferenceDBdir.  Exiting."
+        echo ""
+        exit
+   fi
+fi
+if [ $aflagset == 1 ]
+  then
+    if [ "$AllProteinDB" != "skip"  -a  ! -e $ReferenceDBdir/$AllProteinDB ]
+      then
+        echo ""
+        echo "All protein database file $AllProteinDB does not exist in directory $ReferenceDBdir.  Exiting."
+        echo ""
+        exit
+   fi
+fi
+if [ $hflagset == 1 ]
+  then
+    if [ "$HypotheticalProteinDB" != "skip"  -a  ! -e $ReferenceDBdir/$HypotheticalProteinDB ]
+      then
+        echo ""
+        echo "Hypothetical protein database file $HypotheticalProteinDB does not exist in directory $ReferenceDBdir.  Exiting."
+        echo ""
+        exit
+   fi
+fi
+if [ $dflagset == 1 ]
+  then
+    if [ "$ProteinDomainDB" != "skip"  -a  ! -e $ProteinDomainDB ]
+      then
+        echo ""
+        echo "Protein domain database file $ProteinDomainDB does not exist.  Exiting."
+        echo ""
+        exit
+   fi
+fi
+
+
+
+##### Functions 2 #####
+function makeblastindex {
+
+# $1 = blastfile; $2 = nucl or prot
+
+  ((subsubstep++))
+  fstarttime=$(date +%s)
+  echo ""
+  echo "STEP $step.$substep.$subsubstep - Creating BLAST+ index for $1:"
+  makeblastdb -in $1 -dbtype $2 -parse_seqids
+
+  m=`egrep -c "^>" $1`
+  egrep "^>" $1 | cut -c2- | tr -s " \t|" " " | cut -d" " -f1 | sort > ID-$1
+  n=`cat ID-$1 | wc -l`
+  if [ $n -ne $m ]
+    then
+      echo ""
+      echo "File $1 may need re-formatting. mRNAmarkup expects sequence headers"
+      echo "in standard BLAST+ format starting with:"
+      echo "  >seqidentifier "
+      echo ""
+      echo "To detect apparent problems:	egrep '>' $1"
+      exit
+  fi
+  echo ""
+  fendtime=$(date +%s)
+  executiontime=$(( $fendtime - $fstarttime ))
+  echo "STEP $step.$substep.$subsubstep .. done in $executiontime seconds."
+  echo ""
+
+}
+
+
+function partition {
+
+# $1 = label; $2 = outfileID; $3 = mRNAfile; $4 = "hit" or "chimera"
+
+  ((subsubstep++))
+  fstarttime=$(date +%s)
+  echo ""
+  echo "STEP $step.$substep.$subsubstep - Partitioning $3:"
+  msbfile=msb_$1_$2
+  if [[ $4 == "hit" ]]; then
+    countP=`egrep -v "BLAST|^$|^Query|^--|no_hit|^No query|^Database|^  " $msbfile | cut -d" " -f1 | sort -u | wc -l`
+  else
+    countP=`egrep "Potential chimera" $msbfile | cut -d" " -f6 | sort -u | wc -l`
+  fi
+  if [[ $countP == 0 ]]; then
+    cp $3 not_$1-$3.fas
+    countN=`cat not_$1-$3.fas | egrep "^>" | wc -l`
+    if [ -e ID-$1-$3 ]; then \rm ID-$1-$3; fi
+    if [ -e $1-$3.fas ]; then \rm $1-$3.fas; fi
+    if [ -e ID-not_$1-$3 ]; then \rm ID-not_$1-$3; fi
+  else
+    if [[ $4 == "hit" ]]; then
+      egrep -v "BLAST|^$|^Query|^--|no_hit|^No query|^Database|^  " $msbfile | cut -d" " -f1 | sort -u > ID-$1-$3
+    else
+      egrep "Potential chimera" $msbfile | cut -d" " -f6 | sort -u > ID-$1-$3
+    fi
+    blastdbcmd -db $3 -dbtype nucl -entry_batch ID-$1-$3 -out $1-$3.fas -outfmt %f
+    diff ID-$3 ID-$1-$3 | egrep "^<" | cut -c3- > ID-not_$1-$3
+    countN=`cat ID-not_$1-$3 | wc -l`
+    if [[ $countN > 0 ]]; then
+      blastdbcmd -db $3 -dbtype nucl -entry_batch ID-not_$1-$3 -out not_$1-$3.fas -outfmt %f
+    else
+      rm ID-not_$1-$3
+    fi
+  fi
+  echo ""
+  fendtime=$(date +%s)
+  executiontime=$(( $fendtime - $fstarttime ))
+  echo "STEP $step.$substep.$subsubstep .. done in $executiontime seconds."
+  echo ""
+
+}
+
+
+function train_ESTScan {
+
+# $1 = label; $2 = mRNAfile
+
+  fstarttime=$(date +%s)
+  echo ""
+  echo "STEP $step.$substep - Training ESTScan on $1_$2.ein:"
+  CURRENTDIR=`pwd`
+  cat $installdir/bin/ESTScan.conf | sed "s#ORGANISM#$2#; s#CURRENTDIRECTORY#$CURRENTDIR#; s#MRNAFILE#$1-$2#" > $1_$2.conf
+  prepare_data $1_$2.conf > pd.ESTScan.report
+  build_model $1_$2.conf > bm.ESTScan.report
+  echo ""
+  echo "ESTScan models were trained on $1_$2.ein.  Please see pd.ESTScan.report"
+  echo " and bm.ESTScan.report in $outputdir for reports on the execution of"
+  echo " the ESTScan scripts prepare_data and build_models.  ESTScan output is"
+  echo " in $outputdir/ESTScanDIR, including the newly derived scoring matrix"
+  echo " in the Matrices subdirectory."
+  echo ""
+  fendtime=$(date +%s)
+  executiontime=$(( $fendtime - $fstarttime ))
+  echo "STEP $step.$substep .. done in $executiontime seconds."
+  echo ""
+
+}
+
+
+function cleanup {
+# Cleaning up:
+
+if [ -e $stream ]; then
+  mv $stream unmatched-"$mRNAfile".fas
+  makeblastindex unmatched-"$mRNAfile".fas nucl
+  mv ID-unmatched-"$mRNAfile".fas ID-unmatched-"$mRNAfile"
+  \rm unmatched-"$mRNAfile".fas.n*
+fi
+\rm $mRNAfile "$mRNAfile".n* ID-$mRNAfile
+
+}
+
+
+function report {
+# Summary report:
+
+echo ""
+echo ""
+	echo "REPORT - mRNAmarkup Report on $mRNAfile"
+	echo "REPORT - "
+	count=`egrep -c "^>" ../$mRNAfile`
+	echo "REPORT -   Number of input sequences:                              $count"
+	echo "REPORT                                                             ======="
+
+	if [ -e VC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" VC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of potential vector-contaminated sequences:      $count (file: VC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of potential vector-contaminated sequences:      0"
+	fi
+
+#ADDPREFILTERREPORTHERE
+
+	if [ -e BC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" BC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of potential bacterial-contaminated sequences:   $count (file: BC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of potential bacterial-contaminated sequences:   0"
+	fi
+
+	if [ -e RA-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" RA-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of sequences matching the ReferenceDB:           $count (file: RA-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of sequences matching the ReferenceDB:           0"
+	fi
+	echo "REPORT                                                               ======="
+
+	if [ -e uPC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" uPC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -     Number of unprocessed potential chimeric sequences:     $count (file: uPC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -     Number of unprocessed potential chimeric sequences:     0"
+	fi
+	if [ -e not_uPC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" not_uPC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -     Non-qualifying sequences:                               $count (file: not_uPC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -     Non-qualifying sequences:                               0"
+	fi
+
+	if [ -e sPC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" sPC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -     Number of segments from potential chimeras:             $count (file: sPC-$mRNAfile.fas)"
+	fi
+
+	if [ -e PC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" PC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -     Final number of potential chimeric sequences:           $count (file: PC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -     Final number of potential chimeric sequences:           0"
+	fi
+	if [ -e not_PC-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" not_PC-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -     Non-qualifying sequences:                               $count (file: not_PC-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -     Non-qualifying sequences:                               0"
+	fi
+	echo "REPORT                                                                 ======="
+
+	if [ -e FL-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" FL-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -       Number of potential full-length coding sequences:       $count (file: FL-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -       Number of potential full-length coding sequences:       0"
+	fi
+	if [ -e not_FL-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" not_FL-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -       Non-qualifying sequences:                               $count (file: not_FL-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -       Non-qualifying sequences:                               0"
+	fi
+
+	if [ "$AllProteinDB" != "skip" ]; then
+	if [ -e AA-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" AA-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of sequences matching the AllProteinDB:          $count (file: AA-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of sequences matching the AllProteinDB:          0"
+	fi
+	fi
+
+	if [ "$HypotheticalProteinDB" != "skip" ]; then
+	if [ -e HP-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" HP-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of sequences matching the HypotheticalProteinDB: $count (file: HP-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of sequences matching the HypotheticalProteinDB: 0"
+	fi
+	fi
+
+#ADDPOSTFILTERREPORTHERE
+
+	if [ "$ProteinDomainDB" != "skip" ]; then
+	if [ -e CD-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" CD-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of sequences matching the ProteinDomainDB:       $count (file: CD-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of sequences matching the ProteinDomainDB:       0"
+	fi
+	fi
+
+	if [ "$miRBase" != "skip" ]; then
+	if [ -e MR-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" MR-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of sequences matching the miRNA database:        $count (file: MR-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of sequences matching the miRNA database:        0"
+	fi
+	fi
+
+	if [ -e unmatched-"$mRNAfile".fas ]
+	  then
+	    count=`egrep -c "^>" unmatched-"$mRNAfile".fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of remaining sequences:                          $count (file: unmatched-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of remaining sequences:                          0"
+	fi
+
+        if [ -e cln-$mRNAfile ]
+          then
+            count=`cat cln-$mRNAfile | egrep "^>" | wc -l`
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of cleaned-up sequences:                         $count (file: cln-$mRNAfile)"
+            count=`cat cln-$mRNAfile | egrep " matches " | wc -l`
+	    if [[ $count > 0 ]]
+	      then
+	        echo "REPORT -   Number of annotated sequences:                            $count (identified as ' matches ' in cln-$mRNAfile descriptors"
+	      else
+	        echo "REPORT -   Number of annotated sequences:                            0"
+	    fi
+	  else
+	    echo "REPORT -   Number of cleaned-up sequences:                         0"
+	fi
+
+	echo "REPORT -"
+	echo "REPORT - mRNAmarkup output files have been put into the directory $outputdir.  Enjoy!"
+
+# Return to starting directory:
+
+if [ $outputdir != . ]
+  then
+    cd ..
+fi
+
+echo ""
+echo "Please find mRNAmarkup output in the directory $outputdir:"
+echo ""
+pwd
+echo ""
+ls -RC
+echo ""
+echo "Enjoy!"
+date
+
+}
+
+
+################################################################################
+################################################################################
+
+##### Configure the mRNAmarkup script, for good: #####
+readconfigfile $configfile
+
+
+##### Begin mRNAmarkup processing #####
+date
+substep=1
+subsubstep=0
+echo "STEP $step - Setting up:"
+echo ""
+
+# Create outputdir:
+#
+if [ ! -e $outputdir ]
+  then
+    mkdir $outputdir
+fi
+echo "Output will be put into directory $outputdir."
+
+
+# Working in the specified output directory:
+
+cp $mRNAfile $outputdir
+cd $outputdir
+
+
+# Create blastdb index for later use:
+makeblastindex $mRNAfile nucl
+
+
+# Beginning the stream ($stream will always contain the sequences still being
+# processed):
+stream=stream-$mRNAfile
+
+
+if [ $VectorDB != "skip" ]; then 
+################################################################################
+# 1. Screening for vector contaminations.
+((step++))
+substep=1
+subsubstep=0
+sstarttime=$(date +%s)
+echo "################################################################################"
+echo "STEP $step - Screening for vector contaminations:"
+echo ""
+
+outfileID="$mRNAfile"-vs-$VectorDB
+
+starttime=$(date +%s)
+echo "STEP $step.$substep - Running blastn versus $VectorDB:"
+echo ""
+
+if [ -e blastn_$outfileID ]
+  then
+    echo "Note: Using existing blastn_$outfileID file.  Delete first if this step should be re-run."
+  else
+    if [ $numThreads == 1 ]
+      then
+        blastn -db "$VectorDBdir"/$VectorDB -query $mRNAfile -evalue 1e-20 -show_gis -out blastn_$outfileID
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastn -db "$VectorDBdir"/$VectorDB -query $tmpdir/$mRNAfile$i -evalue 1e-20 -show_gis -out $tmpdir/blastn_$outfileID$i &
+      done 
+      wait
+      cat $tmpdir/blastn_$outfileID* > blastn_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastn_$outfileID*
+    fi
+fi
+endtime=$(date +%s)
+executiontime=$(( $endtime - $starttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+
+# Run MuSeqBox to process BLASTn versus VectorDB results:
+
+if [ ! -e blastn_$outfileID ]
+  then
+    echo "Error: blastn_$outfileID does not exist."
+    exit
+fi
+
+MuSeqBox -i blastn_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_VC_$outfileID
+
+((substep++))
+partition VC $outfileID $mRNAfile hit
+mv not_VC-$mRNAfile.fas $stream
+echo ""
+echo "  Number of potential vector-contaminated sequences = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = VC-$mRNAfile.fas"; fi
+echo "  Number of remaining sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo ""
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+fi
+# end of if [ $VectorDB != "skip" ]; then 
+
+
+#ADDPREFILTERHERE
+
+
+if [ $BacteriaDB != "skip" ]; then 
+################################################################################
+# 2. Screening for bacterial contaminations.
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Screening for bacterial contaminations:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$BacteriaDB
+
+starttime=$(date +%s)
+echo "STEP $step.$substep - Running blastn versus $BacteriaDB:"
+echo ""
+
+if [ -e blastn_$outfileID ]
+  then
+    echo "Note: Using existing blastn_$outfileID file.  Delete first if this step should be re-run."
+  else
+    if [ $numThreads == 1 ]
+      then
+        blastn -db "$BacteriaDBdir"/$BacteriaDB -query $mRNAfile -evalue 1e-20 -show_gis -out blastn_$outfileID
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastn -db "$BacteriaDBdir"/$BacteriaDB -query $tmpdir/$mRNAfile$i -evalue 1e-20 -show_gis -out $tmpdir/blastn_$outfileID$i &
+      done 
+      wait
+      cat $tmpdir/blastn_$outfileID* > blastn_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastn_$outfileID*
+    fi
+fi
+endtime=$(date +%s)
+executiontime=$(( $endtime - $starttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+
+# Run MuSeqBox to process BLASTn versus BacteriaDB results:
+
+if [ ! -e blastn_$outfileID ]
+  then
+    echo "Error: blastn_$outfileID does not exist."
+    exit
+fi
+
+MuSeqBox -i blastn_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_BC_$outfileID
+
+partition BC $outfileID $mRNAfile hit
+mv not_BC-$mRNAfile.fas $stream
+echo ""
+echo "  Number of potential bacterial-contaminated sequences = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = BC-$mRNAfile.fas"; fi
+echo "  Number of remaining sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+fi
+# end of if [ $BacteriaDB != "skip" ]; then 
+
+
+################################################################################
+# 3. Matching against the reference protein set:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Matching against the reference protein set:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$ReferenceDB
+
+# If the -R option is used, then run BLASTx against the ReferenceDB.  Otherwise
+# skip this step (assume that the BLASTx output is already available):
+#
+if [ $revalueset == 1 ]
+  then
+    echo "STEP $step.$substep - Running blastx versus $ReferenceDB:"
+    echo ""
+    starttime=$(date +%s)
+    if [ $numThreads == 1 ]
+      then
+        blastx -db "$ReferenceDBdir"/$ReferenceDB -query $mRNAfile -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out blastx_$outfileID -seg yes
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastx -db "$ReferenceDBdir"/$ReferenceDB -query $tmpdir/$mRNAfile$i -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+      done 
+      wait
+      cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastx_$outfileID*
+    fi
+    endtime=$(date +%s)
+    executiontime=$(( $endtime - $starttime ))
+    echo "STEP $step.$substep .. done in $executiontime seconds."
+else
+    echo "STEP $step.$substep - Running blastx versus $ReferenceDB omitted (using existing output file)."
+fi
+
+# Run MuSeqBox to process BLASTx versus ReferenceDB results:
+
+if [ ! -e blastx_$outfileID ]
+  then
+    echo "Error: blastx_$outfileID does not exist."
+    echo "       If you need to create this file, use the -R option."
+    exit
+fi
+
+MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_RA_$outfileID
+
+partition RA $outfileID $mRNAfile hit
+if [ -e not_RA-$mRNAfile.fas ]; then mv not_RA-$mRNAfile.fas $stream; fi
+echo ""
+echo "  Number of sequences with significant hits to $ReferenceDB = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = RA-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $starttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+
+if [ -e RA-$mRNAfile.fas ]; then
+################################################################################
+# 4. Identify potential chimeric sequences:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Identifying potential chimeric sequences:"
+sstarttime=$(date +%s)
+
+# Set up:
+cp RA-$mRNAfile.fas $mRNAfile
+makeblastindex $mRNAfile nucl
+
+MuSeqBox -i msb_RA_$outfileID -l $idsize -d $dbsize -L $ansize -k $srsize -M 10 50 > msb_PC_$outfileID
+
+partition PC $outfileID $mRNAfile chimera
+echo ""
+echo "  Number of potential chimeric sequences = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = PC-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = not_PC-$mRNAfile.fas"; fi
+
+if [[ $countP > 0 ]]; then
+PCiterate=1
+PCiteration=1
+msbfile=msb_PC_$outfileID
+PCfile=PC-$mRNAfile.fas
+egrep "Potential chimera" $msbfile | sort > PCdescriptions$PCiteration
+
+while [[ $PCiterate == 1 ]]
+do
+  ((PCiteration++))
+  splitchimeras.pl -m $msbfile -q $PCfile -o chimera$PCiteration >& /dev/null
+
+  tmpfile=chimera$PCiteration
+  makeblastindex $tmpfile nucl
+  outfileID="$tmpfile"-vs-$ReferenceDB
+
+  if [ $numThreads == 1 ]
+    then
+      blastx -db "$ReferenceDBdir"/$ReferenceDB -query $tmpfile -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out blastx_$outfileID -seg yes
+  else
+    fastasplit.pl -i $tmpfile -n $numThreads -o $tmpdir
+    iend=`\ls -1 $tmpdir/$tmpfile* | wc -l`
+    for i in `seq 1 $iend`;
+      do
+        blastx -db "$ReferenceDBdir"/$ReferenceDB -query $tmpdir/$tmpfile$i -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+    done 
+    wait
+    cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+    \rm $tmpdir/$tmpfile* $tmpdir/blastx_$outfileID*
+  fi
+
+  MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_TMP_$outfileID
+  MuSeqBox -i msb_TMP_$outfileID -l $idsize -d $dbsize -L $ansize -k $srsize -M 10 50 > msb_PCTMP_$outfileID
+
+  egrep "Potential chimera" msb_PCTMP_$outfileID | sort > PCdescriptions$PCiteration
+  let "PCprevious=$PCiteration-1"
+
+  partition PCTMP $outfileID $tmpfile chimera
+  echo ""
+  echo "  Number of potential chimeric sequences = $countP"
+  if [[ $countP > 0 ]]; then echo "    FASTA file = PCTMP-$tmpfile.fas"; fi
+  echo "  Number of non-qualifying sequences = $countN"
+  if [[ $countN > 0 ]]; then echo "    FASTA file = not_PCTMP-$tmpfile.fas"; fi
+
+  if [[ `cat PCdescriptions$PCiteration | wc -l` ==  0  ||  `diff PCdescriptions$PCiteration PCdescriptions$PCprevious | wc -l` == 0 ]]
+    then
+      PCiterate=0
+      if [ ! -e ID-PCTMP-chimera$PCiteration ]; then
+        cat ID-not_PC* ID-chimera$PCiteration > ID-not_PC-final
+      else
+        cat ID-not_PC* > ID-not_PC-final
+      fi
+      cat not_PC*.fas > not_PC-final.fas
+      if [ -e ID-PCTMP-chimera$PCiteration ]; then
+        cp ID-PCTMP-chimera$PCiteration ID-PC-final
+        cp PCTMP-chimera"$PCiteration".fas PC-final.fas
+      fi
+      \rm -f PCdescriptions* *chimera* *_TMP_* *_PCTMP_*
+      \mv -f msb_PC_"$mRNAfile"-vs-$ReferenceDB msb_uPC_"$mRNAfile"-vs-$ReferenceDB
+      \mv -f ID-PC-$mRNAfile ID-uPC-$mRNAfile
+      \mv -f PC-"$mRNAfile".fas uPC-"$mRNAfile".fas
+      \mv -f ID-not_PC-$mRNAfile ID-not_uPC-$mRNAfile
+      \mv -f not_PC-"$mRNAfile".fas not_uPC-"$mRNAfile".fas
+      if [ -e ID-PC-final ]; then
+        \mv -f ID-PC-final ID-PC-$mRNAfile
+        \mv -f PC-final.fas PC-"$mRNAfile".fas
+      fi
+      if [ -e ID-not_PC-final ]; then
+        \mv -f ID-not_PC-final ID-not_PC-$mRNAfile
+        \mv -f not_PC-final.fas not_PC-"$mRNAfile".fas
+      fi
+      diff not_PC-"$mRNAfile".fas not_uPC-"$mRNAfile".fas | egrep "^<" | cut -c3- > sPC-"$mRNAfile".fas
+
+      if [[ `cat sPC-"$mRNAfile".fas | wc -l` > 0 ]]; then
+        qfile=sPC-"$mRNAfile".fas
+        outfileID=sPC_"$mRNAfile"-vs-$ReferenceDB
+        if [ $numThreads == 1 ]
+          then
+            blastx -db "$ReferenceDBdir"/$ReferenceDB -query $qfile -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out blastx_$outfileID -seg yes
+        else
+          fastasplit.pl -i $qfile -n $numThreads -o $tmpdir
+          iend=`\ls -1 $tmpdir/$qfile* | wc -l`
+          for i in `seq 1 $iend`;
+            do
+              blastx -db "$ReferenceDBdir"/$ReferenceDB -query $tmpdir/$qfile$i -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+          done 
+          wait
+          cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+          \rm $tmpdir/$qfile* $tmpdir/blastx_$outfileID*
+        fi
+        MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_hit_"$mRNAfile"-vs-$ReferenceDB
+        makeblastindex $qfile nucl
+        partition hit "$mRNAfile"-vs-$ReferenceDB $qfile hit
+        echo ""
+        echo "  Number of sequences with significant hits to $ReferenceDB = $countP"
+        if [[ $countP > 0 ]]; then echo "    FASTA file = hit-$qfile.fas"; fi
+        echo "  Number of non-qualifying sequences = $countN"
+        if [[ $countN > 0 ]]; then echo "    FASTA file = not_hit-$qfile.fas"; fi
+        \rm "$qfile".n*
+      fi
+  else
+    msbfile=msb_PCTMP_$outfileID
+    PCfile=PCTMP-$tmpfile.fas
+  fi
+done
+fi
+# end of if [ $countP > 0 ] then  (split chimeras cycle)
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+
+outfileID="$mRNAfile"-vs-$ReferenceDB
+################################################################################
+# 5.1 Identify potential full-length coding sequences:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Identifying potential full-length coding sequences:"
+sstarttime=$(date +%s)
+
+cp not_PC-$mRNAfile.fas $mRNAfile
+makeblastindex $mRNAfile nucl
+
+if [ -e ID-uPC-$mRNAfile ]; then
+cat msb_RA_$outfileID | egrep -v -f ID-uPC-$mRNAfile | MuSeqBox - -g -q -l $idsize -d $dbsize -L $ansize -k $srsize -n $Rnhits -s $Rnhsps -F $Rv5s $Rv3s $Rv5q $Rv3q $Rscv $Rqcv msb_FL_$outfileID > /dev/null
+else
+cat msb_RA_$outfileID | MuSeqBox - -g -q -l $idsize -d $dbsize -L $ansize -k $srsize -n $Rnhits -s $Rnhsps -F $Rv5s $Rv3s $Rv5q $Rv3q $Rscv $Rqcv msb_FL_$outfileID > /dev/null
+fi
+# Note: There could be potential chimeric sequences that would also qualify as
+#       full-length (i.e. matching an entire subject sequence), but we want to
+#       keep all potential chimeric sequences separate.  Thus, the
+#       "egrep -v -f ID-uPC-$mRNAfile" scrubbing of the msb_RA_$outfileID file.
+
+partition FL $outfileID $mRNAfile hit
+echo ""
+echo "  Number of potential full-length coding sequences = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = FL-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = not_FL-$mRNAfile.fas"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+
+
+################################################################################
+# 5.2 Derive codon usage statistics for potential full-length coding sequences:
+
+if [ -e FL-$mRNAfile.fas ]; then
+((substep++))
+subsubstep=0
+echo ""
+echo "STEP $step.$substep - Codon usage statistics for potential full-length coding sequences:"
+starttime=$(date +%s)
+
+dnatopro -t -R -F 250 -M -o FL-$mRNAfile.ein -l FL-$mRNAfile.fas
+dnatopro -v -R -F 250 -M -o FL-$mRNAfile.cds -l FL-$mRNAfile.fas
+genestat -t -f 250 -M -b FL-$mRNAfile.cds > FL-$mRNAfile.codon-usage
+
+echo ""
+echo ""
+countP=`cat FL-$mRNAfile.cds | egrep "^>" | wc -l`
+if [[ $countP > 0 ]]; then
+  echo "  Number of ORFs of at least 250 nucleotides = $countP"
+  echo "    Qualifying coding sequences: FL-$mRNAfile.cds"
+  echo "    Codon usage statistics: FL-$mRNAfile.codon-usage"
+  echo "    ESTscan input: FL-$mRNAfile.ein"
+else
+  echo "  No ORFs of at least 250 nucleotides were found."
+fi
+
+echo ""
+endtime=$(date +%s)
+executiontime=$(( $endtime - $starttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+fi
+
+
+################################################################################
+# 5.3 Train ESTScan:
+
+if [ -e FL-$mRNAfile.fas  -a  $trainESTScan == 1 ]; then
+
+((substep++))
+subsubstep=0
+train_ESTScan FL $mRNAfile
+
+fi
+
+
+fi
+# end of if [ -e RA-$mRNAfile.fas ]; then
+
+
+if [ ! -e $stream ]; then
+AllProteinDB=skip
+fi
+if [ "$AllProteinDB" != "skip" ]; then 
+################################################################################
+# 6. Now exploring hits against the AllProteinDB file:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Matching against the AllProteinDB protein set:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$AllProteinDB
+
+# If the -A option is used, then run BLASTx against the AllProteinDB.
+# Otherwise skip this step (assume that the BLASTx output is already available):
+#
+if [ $aevalueset == 1 ]
+  then
+    echo "STEP $step.$substep - Running blastx versus $AllProteinDB:"
+    echo ""
+    starttime=$(date +%s)
+    if [ $numThreads == 1 ]
+      then
+        blastx -db "$AllProteinDBdir"/$AllProteinDB -query $mRNAfile -evalue $aevalue -show_gis -num_descriptions $AnumDescriptions -num_alignments $AnumAlignments -out blastx_$outfileID -seg yes
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastx -db "$AllProteinDBdir"/$AllProteinDB -query $tmpdir/$mRNAfile$i -evalue $aevalue -show_gis -num_descriptions $AnumDescriptions -num_alignments $AnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+      done 
+      wait
+      cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastx_$outfileID*
+    fi
+    endtime=$(date +%s)
+    executiontime=$(( $endtime - $starttime ))
+    echo "STEP $step.$substep .. done in $executiontime seconds."
+else
+    echo "STEP $step.$substep - Running blastx versus $AllProteinDB omitted (using existing output file)."
+fi
+
+# Run MuSeqBox to process BLASTx versus AllProteinDB results:
+
+if [ ! -e blastx_$outfileID ]
+  then
+    echo "Error: blastx_$outfileID does not exist."
+    echo "       If you need to create this file, use the -A option."
+    exit
+fi
+MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_AA_$outfileID
+
+partition AA $outfileID $mRNAfile hit
+echo ""
+echo "  Number of sequences with significant hits to $AllProteinDB = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = AA-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+if [[ $countN == 0 ]]; then
+  cleanup
+  report
+  exit
+else
+  mv not_AA-$mRNAfile.fas $stream
+fi
+
+fi
+# end of if [ $AllProteinDB != "skip" ]; then 
+
+
+if [ ! -e $stream ]; then
+HypotheticalProteinDB=skip
+fi
+if [ $HypotheticalProteinDB != "skip" ]; then 
+################################################################################
+# 7. Now exploring hits against the HypotheticalProteinDB file:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Matching against the HypotheticalProteinDB protein set:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$HypotheticalProteinDB
+
+# If the -H option is used, then run BLASTx against the HypotheticalProteinDB.
+# Otherwise skip this step (assume that the BLASTx output is already available):
+#
+if [ $hevalueset == 1 ]
+  then
+    echo "STEP $step.$substep - Running blastx versus $HypotheticalProteinDB:"
+    echo ""
+    starttime=$(date +%s)
+    if [ $numThreads == 1 ]
+      then
+        blastx -db "$HypotheticalProteinDBdir"/$HypotheticalProteinDB -query $mRNAfile -evalue $hevalue -show_gis -num_descriptions $HnumDescriptions -num_alignments $HnumAlignments -out blastx_$outfileID -seg yes
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastx -db "$HypotheticalProteinDBdir"/$HypotheticalProteinDB -query $tmpdir/$mRNAfile$i -evalue $hevalue -show_gis -num_descriptions $HnumDescriptions -num_alignments $HnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+      done 
+      wait
+      cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastx_$outfileID*
+    fi
+    endtime=$(date +%s)
+    executiontime=$(( $endtime - $starttime ))
+    echo "STEP $step.$substep .. done in $executiontime seconds."
+else
+    echo "STEP $step.$substep - Running blastx versus $HypotheticalProteinDB omitted (using existing output file)."
+fi
+
+# Run MuSeqBox to process BLASTx versus HypotheticalProteinDB results:
+
+if [ ! -e blastx_$outfileID ]
+  then
+    echo "Error: blastx_$outfileID does not exist."
+    echo "       If you need to create this file, use the -H option."
+    exit
+fi
+MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_HP_$outfileID
+
+partition HP $outfileID $mRNAfile hit
+echo ""
+echo "  Number of sequences with significant hits to $HypotheticalProteinDB = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = HP-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+if [[ $countN == 0 ]]; then
+  cleanup
+  report
+  exit
+else
+  mv not_HP-$mRNAfile.fas $stream
+fi
+
+fi
+# end of if [ $HypotheticalProteinDB != "skip" ]; then 
+
+
+#ADDPOSTFILTERHERE
+
+
+if [ ! -e $stream ]; then
+ProteinDomainDB=skip
+fi
+if [ "$ProteinDomainDB" != "skip" ]; then 
+################################################################################
+# 8. Now exploring hits against the ProteinDomainDB file:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Matching against the ProteinDomainDB file:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$ProteinDomainDB
+
+# If the -D option is used, then run BLASTx against the ProteinDomainDB.
+# Otherwise skip this step (assume that the BLASTx output is already available):
+#
+if [ $devalueset == 1 ]
+  then
+    echo "STEP $step.$substep - Running rpstblastn versus $ProteinDomainDB:"
+    echo ""
+    starttime=$(date +%s)
+    if [ $numThreads == 1 ]
+      then
+        rpstblastn -db "$ProteinDomainDBdir"/$ProteinDomainDB -query $mRNAfile -evalue $devalue -show_gis -num_descriptions $DnumDescriptions -num_alignments $DnumAlignments -out rpstblastn_$outfileID -seg yes
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          rpstblastn -db "$ProteinDomainDBdir"/$ProteinDomainDB -query $tmpdir/$mRNAfile$i -evalue $devalue -show_gis -num_descriptions $DnumDescriptions -num_alignments $DnumAlignments -out $tmpdir/rpstblastn_$outfileID$i -seg yes &
+      done 
+      wait
+      cat $tmpdir/rpstblastn_$outfileID* > rpstblastn_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/rpstblastn_$outfileID*
+    fi
+    endtime=$(date +%s)
+    executiontime=$(( $endtime - $starttime ))
+    echo "STEP $step.$substep .. done in $executiontime seconds."
+else
+    echo "STEP $step.$substep - Running rpstblastn versus $ProteinDomainDB omitted (using existing output file)."
+fi
+
+# Run MuSeqBox to process rpsTBLASTn versus ProteinDomainDB results:
+
+if [ ! -e rpstblastn_$outfileID ]
+  then
+    echo "Error: rpstblastn_$outfileID does not exist."
+    echo "       If you need to create this file, use the -D option."
+    exit
+fi
+MuSeqBox -i rpstblastn_$outfileID -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_CD_$outfileID
+
+partition CD $outfileID $mRNAfile hit
+echo ""
+echo "  Number of sequences with significant hits to $ProteinDomainDB = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = CD-$mRNAfile.fas"; fi
+echo "  Number of non-qualifying sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+if [[ $countN == 0 ]]; then
+  cleanup
+  report
+  exit
+else
+  mv not_CD-$mRNAfile.fas $stream
+fi
+
+fi
+# end of if [ $ProteinDomainDB != "skip" ]; then 
+
+
+if [ ! -e $stream ]; then
+miRBase=skip
+countN=0
+fi
+if [ $miRBase != "skip" ]; then 
+################################################################################
+# 9. Now exploring hits against the miRBase file:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Matching against the miRBase file:"
+sstarttime=$(date +%s)
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-$miRBase
+
+starttime=$(date +%s)
+echo "STEP $step.$substep - Running blastn versus $miRBase:"
+echo ""
+
+if [ -e blastn_$outfileID ]
+  then
+    echo "Note: Using existing blastn_$outfileID file.  Delete first if this step should be re-run."
+  else
+    if [ $numThreads == 1 ]
+      then
+        blastn -db "$miRBasedir"/$miRBase -query $mRNAfile -evalue 1e-20 -show_gis -out blastn_$outfileID
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastn -db "$miRBasedir"/$miRBase -query $tmpdir/$mRNAfile$i -evalue 1e-20 -show_gis -out $tmpdir/blastn_$outfileID$i &
+      done 
+      wait
+      cat $tmpdir/blastn_$outfileID* > blastn_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastn_$outfileID*
+    fi
+fi
+endtime=$(date +%s)
+executiontime=$(( $endtime - $starttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+
+# Run MuSeqBox to process BLASTn versus miRBase results:
+
+if [ ! -e blastn_$outfileID ]
+  then
+    echo "Error: blastn_$outfileID does not exist."
+    exit
+fi
+
+MuSeqBox -i blastn_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_MR_$outfileID
+
+partition MR $outfileID $mRNAfile hit
+echo ""
+echo "  Number of potential miRNA-containing sequences = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = MR-$mRNAfile.fas"; fi
+echo "  Number of remaining sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+fi
+# end of if [ $miRBase != "skip" ]; then 
+
+
+################################################################################
+# 10. Cleaning up:
+((step++))
+substep=1
+subsubstep=0
+echo "################################################################################"
+echo "STEP $step - Cleaning up:"
+
+if [[ $countN > 0 ]]; then
+  \rm ID-not_MR-$mRNAfile
+#	- removing ID-not_MR-$mRNAfile because these IDs represent `the final
+#	unmatched sequences labeled ID-unmatched-$mRNAfile in the cleanup stage.
+  mv not_MR-$mRNAfile.fas $stream
+fi
+cleanup
+
+
+################################################################################
+# 11. Annotation:
+((step++))
+substep=1
+subsubstep=0
+starttime=$(date +%s)
+
+echo "################################################################################"
+echo "STEP $step - Annotation:"
+
+if [ -e not_uPC-"$mRNAfile".fas ]; then
+  countP=`cat not_uPC-"$mRNAfile".fas | egrep "^>" | wc -l`
+  if [[ $countP > 0 ]]; then
+    MuSeqBox -i blastx_"$mRNAfile"-vs-$ReferenceDB -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
+    annotateByMuSeqBox.pl -m tmpmsb4ann -q not_uPC-"$mRNAfile".fas -o ann-not_uPC.fas
+  fi
+fi
+
+if [ -e sPC-"$mRNAfile".fas ]; then
+  countP=`cat sPC-"$mRNAfile".fas | egrep "^>" | wc -l`
+  if [[ $countP > 0 ]]; then
+    MuSeqBox -i blastx_sPC_"$mRNAfile"-vs-$ReferenceDB -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
+    annotateByMuSeqBox.pl -m tmpmsb4ann -q sPC-"$mRNAfile".fas -o ann-sPC.fas
+  fi
+fi
+
+if [ -e AA-"$mRNAfile".fas ]; then
+  countP=`cat AA-"$mRNAfile".fas | egrep "^>" | wc -l`
+  if [[ $countP > 0 ]]; then
+    MuSeqBox -i blastx_"$mRNAfile"-vs-HXref -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
+    annotateByMuSeqBox.pl -m tmpmsb4ann -q AA-"$mRNAfile".fas -o ann-AA.fas
+  fi
+fi
+
+if [ -e HP-"$mRNAfile".fas ]; then
+  countP=`cat HP-"$mRNAfile".fas | egrep "^>" | wc -l`
+  if [[ $countP > 0 ]]; then
+    MuSeqBox -i blastx_"$mRNAfile"-vs-HXpep -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
+    annotateByMuSeqBox.pl -m tmpmsb4ann -q HP-"$mRNAfile".fas -o ann-HP.fas
+  fi
+fi
+
+\rm tmpmsbfile tmpmsb4ann
+
+cat PC-"$mRNAfile".fas ann-not_uPC.fas ann-sPC.fas ann-AA.fas ann-HP.fas CD-"$mRNAfile".fas MR-"$mRNAfile".fas unmatched-"$mRNAfile".fas > cln-$mRNAfile 2>&-
+
+count=`cat cln-$mRNAfile | egrep " matches " | wc -l`
+echo ""
+echo "Number of annotated sequences: $count (identified as ' matches ' in cln-$mRNAfile descriptors)"
+echo ""
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+
+################################################################################
+# The End:
+
+report
+exit

@@ -1,0 +1,17 @@
+
+
+	if [ -e 2LETTERCODE-$mRNAfile.fas ]
+	  then
+	    count=`egrep -c "^>" 2LETTERCODE-$mRNAfile.fas`;
+	  else
+	    count=0;
+	fi
+	if [[ $count > 0 ]]
+	  then
+	    echo "REPORT -   Number of significant hits to ADDITIONALDB:             $count (file: 2LETTERCODE-$mRNAfile.fas)"
+	  else
+	    echo "REPORT -   Number of significant hits to ADDITIONALDB:             0"
+	fi
+
+#END INSERT
+

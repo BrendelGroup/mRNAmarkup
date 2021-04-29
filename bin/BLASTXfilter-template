@@ -1,0 +1,72 @@
+
+
+################################################################################
+# .. Screening for matches against an additional database.
+
+((step++))
+substep=1
+subsubstep=0
+sstarttime=$(date +%s)
+echo "################################################################################"
+echo "STEP $step - Screening for matches against ADDITIONALDB:"
+echo ""
+
+# Set up:
+mv $stream $mRNAfile
+makeblastindex $mRNAfile nucl
+outfileID="$mRNAfile"-vs-ADDITIONALDB
+
+starttime=$(date +%s)
+echo "STEP $step.$substep - Running blastx versus ADDITIONALDB:"
+echo ""
+
+if [ -e blastx_$outfileID ]
+  then
+    echo "Note: Using existing blastx_$outfileID file.  Delete first if this step should be re-run."
+  else
+    if [ $numThreads == 1 ]
+      then
+        blastx -db ADDITIONALDBDIR/ADDITIONALDB -query $mRNAfile -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out blastx_$outfileID -seg yes
+    else
+      fastasplit.pl -i $mRNAfile -n $numThreads -o $tmpdir
+      iend=`\ls -1 $tmpdir/$mRNAfile* | wc -l`
+      for i in `seq 1 $iend`;
+        do
+          blastx -db ADDITIONALDBDIR/ADDITIONALDB -query $tmpdir/$mRNAfile$i -evalue $revalue -show_gis -num_descriptions $RnumDescriptions -num_alignments $RnumAlignments -out $tmpdir/blastx_$outfileID$i -seg yes &
+      done 
+      wait
+      cat $tmpdir/blastx_$outfileID* > blastx_$outfileID
+      \rm $tmpdir/$mRNAfile* $tmpdir/blastx_$outfileID*
+    fi
+fi
+endtime=$(date +%s)
+executiontime=$(( $endtime - $starttime ))
+echo "STEP $step.$substep .. done in $executiontime seconds."
+
+# Run MuSeqBox to process BLASTn versus ADDITIONALDB results:
+
+if [ ! -e blastx_$outfileID ]
+  then
+    echo "Error: blastx_$outfileID does not exist."
+    exit
+fi
+
+MuSeqBox -i blastx_$outfileID -g -q -l $idsize -d $dbsize -L $ansize -k $srsize > msb_2LETTERCODE_$outfileID
+
+((substep++))
+partition 2LETTERCODE $outfileID $mRNAfile hit
+mv not_2LETTERCODE-$mRNAfile.fas $stream
+echo ""
+echo "  Number of sequences matching ADDITIONALDB = $countP"
+if [[ $countP > 0 ]]; then echo "    FASTA file = 2LETTERCODE-$mRNAfile.fas"; fi
+echo "  Number of remaining sequences = $countN"
+if [[ $countN > 0 ]]; then echo "    FASTA file = $stream"; fi
+
+sendtime=$(date +%s)
+executiontime=$(( $sendtime - $sstarttime ))
+echo ""
+echo "STEP $step .. done in $executiontime seconds."
+echo ""
+
+#END INSERT
+
