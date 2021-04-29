@@ -1,0 +1,120 @@
+mRNAmarkup relies on pre-installed external programs and databases.  Please see
+sections SOFTWARE and DATABASES below and make sure that these prerequisites are
+taken care of before proceeding.
+
+Set-up:
+=======
+In general, follow the two steps below for customization.  For a first look at
+the program, skip to section "Test run" and follow the instructions there.
+
+(1) Edit bin/mRNAmarkup, line 12, to indicate the location of the
+    mRNAmarkup.conf file.  If you don't give the full path there, then the
+    program will only run from the directory in which this INSTALL file is
+    located (no changes necessary to run the example only).
+
+(2) Edit ./mRNAmarkup.conf.  No changes are necessary to run the example, but
+    in later use you may wish to change the location of the various databases
+    needed (see below).  If you are running the code on a multi-processor
+    computer, you can set the argument of "numThreads" in the mRNAmarkup.conf
+    file to the number of processors available to you.  What this will do is
+    to split the input to the time-consuming BLAST+ runs into chunks that are
+    then processed by multiple simultaneous BLAST+ invocations.  The output
+    is subsequently combined and thus no different from what you would get
+    with the default numThreads=1.
+
+
+Test run:
+=========
+
+(1) Create the necessary BLAST+ databases:
+
+cd db
+source 0README
+(Note: You probably should read the 0README file to understand what is being
+done.  You can remove the indices by running "xclean".).
+
+(2) Set the install directory variable in mRNAmarkup and mRNAmarkup.conf:
+
+cd ..
+xsetup
+
+(3) Run the example:
+
+cd data
+../bin/mRNAmarkup -i ATput -R 1e-20 -A 1e-20 -D 1e-10 -o test-outdir >& test-err
+egrep "STEP" test-err > test-flow
+egrep "REPORT" test-err > test-report
+
+(or simply "xtest" in the data directory)
+
+Notes:
+(1) Output will be in the "test-outdir" directory.  The files "test-flow" and
+"test-report" give a synopsis of the executed steps and a summary of the
+searches, respetively.  To erase the sample output, run "xclean".
+
+
+
+SOFTWARE
+========
+
+(1) BLAST+:	This program is available from NCBI, see
+
+	http://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download
+
+Install and make sure that the binaries are in your executable path,
+typically /usr/bin or /usr/local/bin or a personal directory.
+
+
+(2) MuSeqBox:	This program is available from our group, see
+
+	http://brendelgroup.org/bioinformatics2go/MuSeqBox.php
+
+For convenience, a copy of the MuSeqBox code distribution is included in
+directory src/contributed.  See INSTALL file in that directory.  Make sure that
+the binaries are in your executable path, typically /usr/bin or /usr/local/bin
+or a personal directory.
+
+
+(3) ESTscan:	This program is described at
+
+	http://estscan.sourceforge.net/
+
+and distributed (in slightly modified form) in the the src/contributed
+directory.  If you decide you do not wish to install this program, then set
+the "trainESTScan" option to 0 on line 56 of the ./mRNAmarkup.conf file.
+If set to 1 (default), mRNAmarkup will train ESTScan models on putative
+full-length transcripts for subsequent use of the estscan program (for
+usage notes, type "estscan -h").  For example, you could investigate the
+unmatched transcripts further for potential coding fragments; in our
+example (in directory data/test-outdir after having created the sample
+mRNAmarkup output):
+
+	estscan -M ESTScanDIR/Matrices/6_00030_0000001_4242.smat -t peptides unmatched-ATput.fas
+
+would create the file "peptides" with potential additional translation fragments
+that were not identified based on the previous similarity searches in the
+workflow.
+
+
+(4) Some utilities from our tool box (VBtools) as collected in the src
+directory.  See INSTALL file in that directory.
+
+
+DATABASES
+=========
+
+Ok, we may have scared you unnecessarily.  We are not really requiring
+databases, just sequence files that are being indexed by makeblastdb. Required
+are
+
+- a database of vector sequences (e.g., UniVec)
+- a file representing typical bacterial hosts (E. coli) in a sequencing project
+- a reference protein set (proteins most likely to have homologs in the mRNA
+	translations of the input)
+- a comprehensive protein set (to be searched when the reference protein set
+	did not give hits)
+- a set of protein domains for search with rpstblastn (typically NCBI CDD)
+- a set of miRNAs (typically miRBase)
+
+The location of these databases are set in the mRNAmarkup.conf file.  Examples
+are provided in the "db" directory.
