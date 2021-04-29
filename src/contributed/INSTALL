@@ -1,0 +1,60 @@
+Please read the following!!!
+If you are comfortable with the default settings (installation under
+/usr/local), then you can use the "xinstall" script as a shortcut to
+following the instructions below.
+===============================================================================
+
+
+MuSeqBox
+	is independently available from
+
+	http://brendelgroup.org/bioinformatics2go/MuSeqBox.php
+
+and redistributed here for convenience. To install
+
+  tar -xzf MuSeqBox-3-4-2020.tar.gz
+  cd MUSEQBOX5.5
+
+and follow the instructions for installation in that directory.
+
+
+ESTScan
+	is described at
+
+	http://estscan.sourceforge.net/
+
+To make installation easier, we distribute here a slightly modified version.
+In the estscan-3.0.3 directory, original files are preserved as copies with
+appendix .ORIG.  To install
+
+  tar -xzf ESTScan/estscan-3.0.3M.tar.gz 
+  cat ESTScan/Arabidopsis_thaliana.smat.gz | gunzip > estscan-3.0.3/matrices/At.smat
+  cat ESTScan/Drosophila_melanogaster.smat.gz | gunzip > estscan-3.0.3/matrices/Dm.smat
+  cat ESTScan/Homo_sapiens.smat.gz | gunzip > estscan-3.0.3/matrices/Hs.smat
+  cat ESTScan/Oryza_sativa.smat.gz | gunzip > estscan-3.0.3/matrices/Os.smat
+  cat ESTScan/Zea_mays.smat.gz | gunzip > estscan-3.0.3/matrices/Zm.smat
+  cd estscan-3.0.3
+
+Edit the Makefile if you wish to change the default install directory from
+the default /usr/local/bin (line 10), or the default location for ESTScan
+matrices (set to /usr/local/share/ESTScan/matrices, lines 11-12), or the default
+matrix (set to At.smat, line 12).  Then
+
+  make
+  sudo make install
+  make clean
+  cd ..
+
+  tar -xzf ESTScan/BTLib-0.20
+  cd BTLib-0.20
+  perl Makefile.PL
+  sudo make install
+  cd ..
+
+Note:  Use perl Makefile.PL PREFIX=<your perl module directory> if you wish
+to install the BTLib module in a private directory on your PERL5LIB path.
+
+See estscan-3.0.3/test/0README for a simple test of your installation.
+
+See ESTScan/0README for sources and ESTScan/user_guide_fev_07.pdf for a
+tutorial on ESTScan model building.

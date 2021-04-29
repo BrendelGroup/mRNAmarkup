@@ -1,0 +1,27 @@
+wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.11.0+-x64-linux.tar.gz
+tar -xzf ncbi-blast-2.11.0+-x64-linux.tar.gz 
+sudo cp ncbi-blast-2.11.0+/bin/* /usr/local/bin/
+
+wget http://www.brendelgroup.org/bioinformatics2go/Download/MuSeqBox-3-4-2020.tar.gz
+tar -xzf MuSeqBox-3-4-2020.tar.gz
+cd MUSEQBOX5.5
+cd src
+make linux
+sudo make install
+cd ../..
+tar -xzf ESTScan/estscan-3.0.3M.tar.gz 
+cat ESTScan/Arabidopsis_thaliana.smat.gz | gunzip > estscan-3.0.3/matrices/At.smat
+cat ESTScan/Drosophila_melanogaster.smat.gz | gunzip > estscan-3.0.3/matrices/Dm.smat
+cat ESTScan/Homo_sapiens.smat.gz | gunzip > estscan-3.0.3/matrices/Hs.smat
+cat ESTScan/Oryza_sativa.smat.gz | gunzip > estscan-3.0.3/matrices/Os.smat
+cat ESTScan/Zea_mays.smat.gz | gunzip > estscan-3.0.3/matrices/Zm.smat
+cd estscan-3.0.3
+make
+sudo make install
+make clean
+cd ..
+tar -xzf ESTScan/BTLib-0.20.tar.gz
+cd BTLib-0.20
+perl Makefile.PL
+sudo make install
+cd ..

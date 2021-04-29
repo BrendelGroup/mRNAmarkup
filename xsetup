@@ -1,0 +1,12 @@
+#!/bin/bash
+
+INSTALLDIR=`pwd`
+echo "Setting INSTALLDIR to:"
+echo $INSTALLDIR
+echo ""
+
+sed s=INSTALLDIR="$INSTALLDIR"= < mRNAmarkup.conf.orig > mRNAmarkup.conf
+sed s=INSTALLDIR="$INSTALLDIR"= < bin/mRNAmarkup.orig > bin/mRNAmarkup
+chmod a+x bin/mRNAmarkup
+
+mkdir data/test-outdir
