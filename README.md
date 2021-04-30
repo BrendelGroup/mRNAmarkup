@@ -1,7 +1,7 @@
 # mRNAmarkup - a workflow for annotating transcript sequences
 
 
-## INSTALLATION:
+## Installation
 
   mRNAmarkup is implemented as a bash script which should work on any Linux or
   UNIX system.  Please see [INSTALL](./INSTALL) for requirements of other software
