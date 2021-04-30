@@ -4,13 +4,21 @@ If you are comfortable with the default settings (installation under
 following the instructions below.
 ===============================================================================
 
+BLAST+
+	see
+
+	http://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download
+
+Install and make sure that the binaries are in your executable path, typically
+/usr/bin or /usr/local/bin or a personal directory.
+
 
 MuSeqBox
 	is independently available from
 
 	http://brendelgroup.org/bioinformatics2go/MuSeqBox.php
 
-and redistributed here for convenience. To install
+To install
 
   tar -xzf MuSeqBox-3-4-2020.tar.gz
   cd MUSEQBOX5.5
