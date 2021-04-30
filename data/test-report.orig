@@ -2,7 +2,7 @@ REPORT - mRNAmarkup Report on ATput
 REPORT - 
 REPORT -   Number of input sequences:                              300
 REPORT                                                             =======
-REPORT -   Number of potential vector-contaminated sequences:      1 (file: VC-ATput.fas)
+REPORT -   Number of potential vector-contaminated sequences:      2 (file: VC-ATput.fas)
 REPORT -   Number of potential bacterial-contaminated sequences:   2 (file: BC-ATput.fas)
 REPORT -   Number of sequences matching the ReferenceDB:           167 (file: RA-ATput.fas)
 REPORT                                                               =======
@@ -14,11 +14,11 @@ REPORT -     Non-qualifying sequences:                               171 (file: 
 REPORT                                                                 =======
 REPORT -       Number of potential full-length coding sequences:       61 (file: FL-ATput.fas)
 REPORT -       Non-qualifying sequences:                               110 (file: not_FL-ATput.fas)
-REPORT -   Number of sequences matching the AllProteinDB:          4 (file: AA-ATput.fas)
+REPORT -   Number of sequences matching the AllProteinDB:          5 (file: AA-ATput.fas)
 REPORT -   Number of sequences matching the ProteinDomainDB:       25 (file: CD-ATput.fas)
-REPORT -   Number of sequences matching the miRNA database:        4 (file: MR-ATput.fas)
-REPORT -   Number of remaining sequences:                          97 (file: unmatched-ATput.fas)
-REPORT -   Number of cleaned-up sequences:                         301 (file: cln-ATput)
+REPORT -   Number of sequences matching the miRNA database:        5 (file: MR-ATput.fas)
+REPORT -   Number of remaining sequences:                          94 (file: unmatched-ATput.fas)
+REPORT -   Number of cleaned-up sequences:                         300 (file: cln-ATput)
 REPORT -   Number of annotated sequences:                            88 (identified as ' matches ' in cln-ATput descriptors
 REPORT -
 REPORT - mRNAmarkup output files have been put into the directory test-outdir.  Enjoy!
