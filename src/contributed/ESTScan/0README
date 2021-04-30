@@ -1,0 +1,27 @@
+ESTScan Project Description:
+	http://estscan.sourceforge.net/
+
+	(includes the sample configuration file mm.conf by cut and paste)
+
+Code Distribution
+=================
+
+http://sourceforge.net/projects/estscan/files/estscan/3.0.3/estscan-3.0.3.tar.gz/download
+ ! we use a modified version
+http://sourceforge.net/projects/estscan/files/BTLib/0.20/BTLib-0.20.tar.gz/download
+
+http://sourceforge.net/projects/estscan/files/matrices/December-2006/Arabidopsis_thaliana.smat.gz/download
+http://sourceforge.net/projects/estscan/files/matrices/December-2006/Oryza_sativa.smat.gz/download
+http://sourceforge.net/projects/estscan/files/matrices/December-2006/Zea_mays.smat.gz/download
+http://sourceforge.net/projects/estscan/files/matrices/December-2006/Drosophila_melanogaster.smat.gz/download
+http://sourceforge.net/projects/estscan/files/matrices/December-2006/Homo_sapiens.smat.gz/download
+
+Documentation (for model building)
+==================================
+
+http://sourceforge.net/projects/estscan/files/documentation/Feb-2007/user_guide_fev_07.pdf/download
+
+Installation and testing
+========================
+
+See ../INSTALL file.

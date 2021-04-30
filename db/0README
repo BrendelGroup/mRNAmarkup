@@ -1,0 +1,75 @@
+# Sample databases for use in mRNAmarkup.
+#
+# To use the sample data for testing your mRNAmarkup installation, download
+# the files as follows:
+wget http://www.brendelgroup.org/bioinformatics2go/Download/mRNAmarkup.db.tgz
+tar -xzf mRNAmarkup.db.tgz
+mv mRNAmarkup.db/* ./
+\rmdir mRNAmarkup.db
+\rm    mRNAmarkup.db.tgz
+
+# Then execute the makeblastdb commands to create BLAST+ indexes as
+# documented below. The original sources of the data are as listed.
+# Use can use the 'xclean' script to remove the indexes no longer needed.
+
+
+# 1. Download UniVec from
+#	ftp://ftp.ncbi.nih.gov/pub/UniVec/
+#
+#wget ftp://ftp.ncbi.nih.gov/pub/UniVec/UniVec
+# (Supplied version:	6,093 sequences, build 10.0, Mar. 20, 2017;
+#                       https://www.ncbi.nlm.nih.gov/tools/vecscreen/uvcurrent/#Statistics)
+#
+makeblastdb -in UniVec -dbtype nucl -parse_seqids
+
+
+# 2. Download an E. coli genome from NCBI Nucleotide (e.g., accession NC_000913,
+#    saved as Ecoli), then:
+#
+makeblastdb -in Ecoli -dbtype nucl -parse_seqids
+
+
+# 3. Go to
+#	http://www.plantgdb.org/XGDB/phplib/download.php?GDB=At
+# Download ATpepTAIR10 (35,386 entries).
+#
+#wget http://www.plantgdb.org/download/Download/xGDB/AtGDB/ATpepTAIR10
+#sed -i -e "s/^>/>gnl|RA|/" ATpepTAIR10
+#
+makeblastdb -in ATpepTAIR10 -dbtype prot -parse_seqids
+
+
+# 4. Go to
+#	http://www.uniprot.org/uniref/?query=identity:0.9+taxonomy:33090&format=*&compress=yes
+# and uncompress the file as => UniRef90v (7,725,778 entries representing Viridiplantae in
+#                                          FASTA format; obtained:       April 28, 2021)
+#
+makeblastdb -in UniRef90v -dbtype prot -parse_seqids
+
+
+# 5. Install NCBI's CDD database:
+# 	see
+# 		http://www.ncbi.nlm.nih.gov/Structure/cdd/cdd_help.shtml
+#	and in particular
+# 		http://www.ncbi.nlm.nih.gov/Structure/cdd/cdd_help.shtml#RPSBFtp
+#
+#    The ftp site for download is
+# 	ftp://ftp.ncbi.nih.gov/pub/mmdb/cdd/
+#    For example, for a Linux system, you'd need the little endian preformatted
+#    database:
+# 	ftp://ftp.ncbi.nih.gov/pub/mmdb/cdd/little_endian/Cdd_LE.tar.gz
+#
+#wget ftp://ftp.ncbi.nih.gov/pub/mmdb/cdd/little_endian/Cdd_LE.tar.gz
+#
+tar -xzf Cdd_LE.tar.gz
+
+
+# 6. Go to
+#	http://www.mirbase.org/ftp.shtml
+# Download hairpin.fa (38,589 entries in Release 22.1) and rename:
+#
+#wget ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz
+#gunzip hairpin.fa.gz 
+#mv hairpin.fa miRBase22.1
+#
+makeblastdb -in miRBase22.1 -dbtype nucl -parse_seqids

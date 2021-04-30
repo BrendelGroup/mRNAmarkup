@@ -1,0 +1,69 @@
+#!/bin/tcsh -f
+#xmRNAmarkupAddFilter							VB, June 3, 2013.
+
+if ($#argv < 5) then
+ echo ""
+ echo "xmRNAmarkupAddFilter ... ."
+ echo ""
+ echo "Usage:  xmRNAmarkupAddFilter dbdir dbname dbtype label location"
+ echo ""
+ echo "  where:"
+ echo "        dbdir    = directory (full path) that contains dbname "
+ echo "        dbname   = name of BLAST database to be searched"
+ echo "        dbtype   = nucl or prot"
+ echo "        label    = 2-letter code database identifier"
+ echo "        location = pre or post (determines location of filter in the mRNAmarkup flow)"
+ echo ""
+ echo "Example: xmRNAmarkupAddFilter /usr/local/share/db MyPRT prot MP post"
+ echo ""
+ echo "Output:  mymRNAmarkup (edited copy of mRNAmarkup)"
+ echo ""
+ exit(0)
+else
+ set MYADDITIONALDBDIR = $argv[1]
+ set MYADDITIONALDB    = $argv[2]
+ set dbtype            = $argv[3]
+ set MY2LETTERCODE     = $argv[4]
+ set LOCATION          = $argv[5]
+endif
+
+
+if ( $dbtype == nucl ) then
+  set MYFILTER = BLASTNfilter-template
+else if ( $dbtype == prot ) then
+  set MYFILTER = BLASTXfilter-template
+else
+  echo "Please specify dbtype as one of [nucl|prot]."
+  exit(0)
+endif
+
+cp mRNAmarkup mymRNAmarkup
+if ( $LOCATION == pre ) then
+
+ed mymRNAmarkup <<%
+/ADDPREFILTERHERE/
+.r $MYFILTER
+/ADDPREFILTERREPORTHERE/
+.r REPORTfilter-template
+1,\$g!ADDITIONALDBDIR!s!!$MYADDITIONALDBDIR!g
+1,\$g!ADDITIONALDB!s!!$MYADDITIONALDB!g
+1,\$g!2LETTERCODE!s!!$MY2LETTERCODE!g
+w
+q
+%
+
+else if ( $LOCATION == post ) then
+
+ed mymRNAmarkup <<%
+/ADDPOSTFILTERHERE/
+.r $MYFILTER
+/ADDPOSTFILTERREPORTHERE/
+.r REPORTfilter-template
+1,\$g!ADDITIONALDBDIR!s!!$MYADDITIONALDBDIR!g
+1,\$g!ADDITIONALDB!s!!$MYADDITIONALDB!g
+1,\$g!2LETTERCODE!s!!$MY2LETTERCODE!g
+w
+q
+%
+
+endif

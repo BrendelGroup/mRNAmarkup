@@ -1,0 +1,9 @@
+1) Install the contributed software as per INSTALL file in directory
+   "contributed".
+2) Install additional tools from this directory as follows.  Change the
+   INSTALLDIR variable in Makefile if you wish to install the binary in
+   a directory other than /usr/local/bin.  Then:
+
+make
+sudo make install
+make clean
