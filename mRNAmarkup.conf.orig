@@ -1,6 +1,6 @@
 # mRNAmarkup.conf
 #
-# Last update: April 8, 2015.  Volker Brendel.
+# Last update: April 29, 2021.  Volker Brendel.
 #
 
 # Locations and names of protein databases:
@@ -18,7 +18,7 @@ HypotheticalProteinDB=HXpep
 ProteinDomainDBdir=INSTALLDIR/db
 ProteinDomainDB=Cdd
 miRBasedir=INSTALLDIR/db
-miRBase=miRBase19
+miRBase=miRBase22.1
 
 # BLAST+ parameters:
 #
