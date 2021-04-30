@@ -3,7 +3,7 @@ From: fedora:34
 
 %post
     dnf -y update
-    dnf -y install bc git tcsh tzdata unzip zip wget which bzip2
+    dnf -y install bc diffutils git tcsh tzdata unzip zip wget which bzip2
     dnf -y install gcc gcc-c++ gcc-gfortran make autoconf automake
 
 
