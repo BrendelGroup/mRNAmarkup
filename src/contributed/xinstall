@@ -2,9 +2,9 @@ wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.11.
 tar -xzf ncbi-blast-2.11.0+-x64-linux.tar.gz 
 sudo cp ncbi-blast-2.11.0+/bin/* /usr/local/bin/
 
-wget http://www.brendelgroup.org/bioinformatics2go/Download/MuSeqBox-3-4-2020.tar.gz
-tar -xzf MuSeqBox-3-4-2020.tar.gz
-cd MUSEQBOX5.5
+wget http://www.brendelgroup.org/bioinformatics2go/Download/MuSeqBox-5-2-2021.tar.gz
+tar -xzf MuSeqBox-5-2-2021.tar.gz
+cd MUSEQBOX5.6
 cd src
 make linux
 sudo make install
