@@ -11,7 +11,7 @@ and specific set-up instructions.
 ## Quick Start
 
 If you want to avoid any installation hussles, the following will do nicely,
-using our mRNAmarkup [Singularity](https://www.sylabs.io/docs/) container that
+using our mRNAmarkup [Singularity](https://apptainer.org/) container that
 encapsulates all scripts, programs, and system packages.
 
 
