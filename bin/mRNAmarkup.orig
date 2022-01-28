@@ -3,7 +3,7 @@
 # mRNAmarkup:  a bash script representing a work flow for mRNA inspection and
 #              annotation using BLAST+, MuSeqBox, and other programs.
 #
-# Last update: April 29, 2019.  Volker Brendel.
+# Last update: January 28, 2022.  Volker Brendel.
 #
 
 # Set the install directory (set this variable to the location of the
@@ -1546,7 +1546,7 @@ fi
 if [ -e AA-"$mRNAfile".fas ]; then
   countP=`cat AA-"$mRNAfile".fas | egrep "^>" | wc -l`
   if [[ $countP > 0 ]]; then
-    MuSeqBox -i blastx_"$mRNAfile"-vs-HXref -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i blastx_"$mRNAfile"-vs-$AllProteinDB -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
     MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
     annotateByMuSeqBox.pl -m tmpmsb4ann -q AA-"$mRNAfile".fas -o ann-AA.fas
   fi
@@ -1555,7 +1555,7 @@ fi
 if [ -e HP-"$mRNAfile".fas ]; then
   countP=`cat HP-"$mRNAfile".fas | egrep "^>" | wc -l`
   if [[ $countP > 0 ]]; then
-    MuSeqBox -i blastx_"$mRNAfile"-vs-HXpep -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
+    MuSeqBox -i blastx_"$mRNAfile"-vs-$HypotheticalProteinDB -n 1 -l $idsize -d $dbsize -L 240 -k $srsize -A $pid $mao $scv tmpmsbfile > /dev/null
     MuSeqBox -i tmpmsbfile -n 1 -s 1 > tmpmsb4ann
     annotateByMuSeqBox.pl -m tmpmsb4ann -q HP-"$mRNAfile".fas -o ann-HP.fas
   fi
