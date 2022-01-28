@@ -19,6 +19,6 @@ REPORT -   Number of sequences matching the ProteinDomainDB:       25 (file: CD-
 REPORT -   Number of sequences matching the miRNA database:        5 (file: MR-ATput.fas)
 REPORT -   Number of remaining sequences:                          94 (file: unmatched-ATput.fas)
 REPORT -   Number of cleaned-up sequences:                         300 (file: cln-ATput)
-REPORT -   Number of annotated sequences:                            88 (identified as ' matches ' in cln-ATput descriptors
+REPORT -   Number of annotated sequences:                            89 (identified as ' matches ' in cln-ATput descriptors
 REPORT -
 REPORT - mRNAmarkup output files have been put into the directory test-outdir.  Enjoy!

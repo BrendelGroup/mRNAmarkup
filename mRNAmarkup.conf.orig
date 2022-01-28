@@ -1,6 +1,6 @@
 # mRNAmarkup.conf
 #
-# Last update: April 29, 2021.  Volker Brendel.
+# Last update: January 28, 2022.  Volker Brendel.
 #
 
 # Locations and names of protein databases:
@@ -14,7 +14,7 @@ ReferenceDB=ATpepTAIR10
 AllProteinDBdir=INSTALLDIR/db
 AllProteinDB=UniRef90v
 HypotheticalProteinDBdir=INSTALLDIR/db
-HypotheticalProteinDB=HXpep
+HypotheticalProteinDB=
 ProteinDomainDBdir=INSTALLDIR/db
 ProteinDomainDB=Cdd
 miRBasedir=INSTALLDIR/db
